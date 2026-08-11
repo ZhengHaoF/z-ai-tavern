@@ -39,7 +39,7 @@ export class PixiHexEngine {
   private targetPos = { x: 0, y: 0 };
   private movePath: HexKey[] = [];
   private isMoving = false;
-  private moveSpeed = 0.08;
+  private moveSpeed = 220; // 像素 / 秒匀速物理速度
 
   private callbacks: PixiHexEngineCallbacks = {};
 
@@ -393,25 +393,34 @@ export class PixiHexEngine {
   }
 
   private updatePlayerMovement() {
-    if (!this.isMoving || this.movePath.length === 0) return;
+    if (!this.isMoving || this.movePath.length === 0 || !this.app) return;
 
-    const targetHex = this.movePath[0];
-    const targetPixel = hexToPixel(targetHex.q, targetHex.r, this.hexRadius);
+    const deltaSec = (this.app.ticker.deltaMS || 16.6) / 1000;
+    let moveBudget = this.moveSpeed * deltaSec;
 
-    const dx = targetPixel.x - this.playerPos.x;
-    const dy = targetPixel.y - this.playerPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    while (moveBudget > 0 && this.movePath.length > 0) {
+      const targetHex = this.movePath[0];
+      const targetPixel = hexToPixel(targetHex.q, targetHex.r, this.hexRadius);
 
-    if (dist < 3) {
-      this.playerPos = { ...targetPixel };
-      this.playerHex = targetHex;
-      this.movePath.shift();
-      if (this.movePath.length === 0) {
-        this.isMoving = false;
+      const dx = targetPixel.x - this.playerPos.x;
+      const dy = targetPixel.y - this.playerPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist <= moveBudget) {
+        this.playerPos = { ...targetPixel };
+        this.playerHex = targetHex;
+        moveBudget -= dist;
+        this.movePath.shift();
+        if (this.movePath.length === 0) {
+          this.isMoving = false;
+          break;
+        }
+      } else {
+        const ratio = moveBudget / dist;
+        this.playerPos.x += dx * ratio;
+        this.playerPos.y += dy * ratio;
+        moveBudget = 0;
       }
-    } else {
-      this.playerPos.x += dx * this.moveSpeed;
-      this.playerPos.y += dy * this.moveSpeed;
     }
 
     this.redrawGrid();

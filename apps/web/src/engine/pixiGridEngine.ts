@@ -40,7 +40,7 @@ export class PixiGridEngine {
   private targetPos = { x: 0, y: 0 };
   private movePath: GridKey[] = [];
   private isMoving = false;
-  private moveSpeed = 0.12;
+  private moveSpeed = 220; // 像素 / 秒匀速移动物理速度
 
   // Keyboard State for WASD Combinations
   private activeKeys = new Set<string>();
@@ -447,25 +447,34 @@ export class PixiGridEngine {
   }
 
   private updatePlayerMovement() {
-    if (!this.isMoving || this.movePath.length === 0) return;
+    if (!this.isMoving || this.movePath.length === 0 || !this.app) return;
 
-    const targetGrid = this.movePath[0];
-    const targetPixel = gridToPixel(targetGrid.col, targetGrid.row, this.gridSize);
+    const deltaSec = (this.app.ticker.deltaMS || 16.6) / 1000;
+    let moveBudget = this.moveSpeed * deltaSec;
 
-    const dx = targetPixel.x - this.playerPos.x;
-    const dy = targetPixel.y - this.playerPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    while (moveBudget > 0 && this.movePath.length > 0) {
+      const targetGrid = this.movePath[0];
+      const targetPixel = gridToPixel(targetGrid.col, targetGrid.row, this.gridSize);
 
-    if (dist < 4) {
-      this.playerPos = { ...targetPixel };
-      this.playerGrid = targetGrid;
-      this.movePath.shift();
-      if (this.movePath.length === 0) {
-        this.isMoving = false;
+      const dx = targetPixel.x - this.playerPos.x;
+      const dy = targetPixel.y - this.playerPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist <= moveBudget) {
+        this.playerPos = { ...targetPixel };
+        this.playerGrid = targetGrid;
+        moveBudget -= dist;
+        this.movePath.shift();
+        if (this.movePath.length === 0) {
+          this.isMoving = false;
+          break;
+        }
+      } else {
+        const ratio = moveBudget / dist;
+        this.playerPos.x += dx * ratio;
+        this.playerPos.y += dy * ratio;
+        moveBudget = 0;
       }
-    } else {
-      this.playerPos.x += dx * this.moveSpeed;
-      this.playerPos.y += dy * this.moveSpeed;
     }
 
     this.redrawGrid();

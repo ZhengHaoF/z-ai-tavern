@@ -1,272 +1,181 @@
 <template>
-  <div class="editor-page-container">
-    <!-- Korean Dark Fantasy Metal Slab Header Console -->
-    <header class="editor-header korean-dark-slab">
-      <span class="corner-accent corner-tl"></span>
-      <span class="corner-accent corner-tr"></span>
-      <span class="corner-accent corner-bl"></span>
-      <span class="corner-accent corner-br"></span>
-
-      <div class="header-left">
-        <router-link to="/" class="korean-btn-metal nav-back-btn" title="返回主页">
-          <ArrowLeft :size="15" />
-          <span>返回主城</span>
-        </router-link>
-
-        <div class="title-group">
-          <h1 class="editor-title korean-gold-title">
-            <Shield :size="16" class="title-icon" />
-            <span>八方向正方形路网编辑器</span>
-          </h1>
-          <span class="editor-subtitle">TACTICAL SQUARE GRID EDITOR // /editor</span>
-        </div>
+  <div class="editor-container" @click="closeContextMenu">
+    <!-- 顶部玻璃拟物化控制栏 -->
+    <header class="editor-header">
+      <div class="left-group">
+        <router-link to="/" class="back-link">⚔️ 返回游戏</router-link>
+        <span class="divider">|</span>
+        <h2 class="title gold-text">🕸️ 节点式世界网编辑器 (.zworld)</h2>
       </div>
 
-      <div class="header-center">
-        <!-- Image Upload (New Map) -->
-        <label class="korean-btn-metal btn-file" title="新建地图：选择一张背景图">
-          <Upload :size="15" />
-          <span>新建 (图片)</span>
-          <input type="file" accept="image/*" @change="handleImageUpload" hidden />
+      <!-- 操作面板组 -->
+      <div class="tools-group">
+        <label class="btn-tool gold-btn">
+          🖼️ 上传图片创建地图底层
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden-input"
+            @change="onAddMapImages"
+          />
         </label>
 
-        <div class="header-divider"></div>
-
-        <!-- Grid Size Slider -->
-        <div class="tool-group">
-          <Sliders :size="14" class="slider-icon" />
-          <span class="tool-label">网格粒度: {{ gridSize }}px</span>
+        <label v-if="activeMapId" class="btn-tool dark-btn">
+          🔄 替换所选底图
           <input
-            type="range"
-            min="16"
-            max="64"
-            step="2"
-            v-model.number="gridSize"
-            @input="updateGridSize"
-            class="korean-slider radius-slider"
+            type="file"
+            accept="image/*"
+            class="hidden-input"
+            @change="onReplaceBgImage"
+          />
+        </label>
+
+        <span class="divider">|</span>
+
+        <!-- 刷子模式切换 -->
+        <div class="brush-selector">
+          <button
+            class="btn-brush"
+            :class="{ active: currentTool === 'walkable' }"
+            @click="setTool('walkable')"
+          >
+            🖌️ 通行区
+          </button>
+          <button
+            class="btn-brush"
+            :class="{ active: currentTool === 'eraser' }"
+            @click="setTool('eraser')"
+          >
+            🧼 障碍区
+          </button>
+          <button
+            class="btn-brush"
+            :class="{ active: currentTool === 'portal' }"
+            @click="setTool('portal')"
+          >
+            🚪 传送点
+          </button>
+        </div>
+
+        <!-- 多传送点管理栏 (当选择传送点刷子时呈现) -->
+        <div v-if="currentTool === 'portal' && currentMapNode" class="portal-panel">
+          <button class="btn-tool dark-btn add-portal-btn" @click="addNewPortal">
+            ➕ 新建传送点
+          </button>
+
+          <!-- 传送点 Chip 标签组 -->
+          <div class="portal-chips">
+            <span
+              v-for="portal in currentMapNode.portals"
+              :key="portal.id"
+              class="portal-chip"
+              :class="{ active: portal.id === activePortalId }"
+              :style="{ borderColor: portal.color || '#38bdf8', color: portal.color || '#38bdf8' }"
+              @click="selectPortal(portal)"
+            >
+              🚪 {{ portal.name }}
+            </span>
+          </div>
+
+          <input
+            v-if="activePortal"
+            v-model="activePortal.name"
+            type="text"
+            class="portal-name-input"
+            placeholder="传送点名称(如:酒馆前门)"
+            @change="onPortalNameChange"
           />
         </div>
-
-        <div class="header-divider"></div>
-
-        <!-- Korean Segmented Slot for Brush Modes -->
-        <div class="korean-segmented-slot">
-          <button
-            class="korean-slot-item"
-            :class="{ active: brushMode === 'walkable' && !isTestMode }"
-            @click="setBrush('walkable')"
-          >
-            <Paintbrush :size="14" />
-            <span>刻印 (通行)</span>
-          </button>
-
-          <button
-            class="korean-slot-item"
-            :class="{ active: brushMode === 'eraser' && !isTestMode }"
-            @click="setBrush('eraser')"
-          >
-            <Eraser :size="14" />
-            <span>抹除 (障碍)</span>
-          </button>
-
-          <button class="korean-slot-item btn-clear" @click="clearAll" title="重置全阵网格">
-            <RotateCcw :size="14" />
-            <span>重置</span>
-          </button>
-        </div>
-
-        <div class="header-divider"></div>
-
-        <!-- Test Mode Toggle -->
-        <button
-          class="korean-btn-metal btn-test"
-          :class="{ active: isTestMode }"
-          @click="toggleTestMode"
-        >
-          <FlaskConical :size="15" />
-          <span>{{ isTestMode ? '退出演练' : '试走演练 (WASD 8向)' }}</span>
-        </button>
       </div>
 
-      <div class="header-right">
-        <label class="korean-btn-metal btn-file" title="打开 .zmap 关卡压缩包继续编辑">
-          <FolderOpen :size="15" />
-          <span>打开 (.zmap)</span>
-          <input type="file" accept=".zmap,.zip,application/json" @change="handleArchiveImport" hidden />
-        </label>
-
-        <button class="korean-btn-metal korean-btn-gold" @click="exportZMap" title="导出包含数据与图片的 .zmap 关卡包">
-          <Download :size="15" />
-          <span>导出关卡包 (.zmap)</span>
+      <!-- 右侧 IO 操作区 -->
+      <div class="io-group">
+        <button class="btn-io gold-btn" @click="exportZWorld">
+          💾 导出 .zworld 世界工程
         </button>
+        <label class="btn-io metal-btn">
+          📂 读取 .zworld / .zmap
+          <input
+            type="file"
+            accept=".zworld,.zmap,.zip"
+            class="hidden-input"
+            @change="onImportFile"
+          />
+        </label>
       </div>
     </header>
 
-    <!-- PixiJS Canvas Viewport -->
-    <div ref="pixiContainer" class="pixi-editor-viewport"></div>
-
-    <!-- Floating Korean Dark Fantasy Tactical Compass Status Bar -->
-    <div class="status-capsule-wrapper">
-      <div class="korean-compass-panel korean-dark-slab">
-        <span class="corner-accent corner-tl"></span>
-        <span class="corner-accent corner-tr"></span>
-        <span class="corner-accent corner-bl"></span>
-        <span class="corner-accent corner-br"></span>
-
-        <div class="capsule-item count-item">
-          <CheckCircle2 :size="14" class="icon-walkable" />
-          <span>打标区域: <strong>{{ walkableCount }}</strong> 格</span>
-        </div>
-
-        <div class="capsule-divider" v-if="hoverGrid"></div>
-
-        <div class="capsule-item coord-item" v-if="hoverGrid">
-          <MapPin :size="14" class="icon-pin" />
-          <span>阵形坐标: (Col: {{ hoverGrid.col }}, Row: {{ hoverGrid.row }})</span>
-        </div>
-
-        <div class="capsule-divider"></div>
-
-        <div class="capsule-item hint-item" :class="{ 'test-mode-hint': isTestMode }">
-          <span v-if="!isTestMode">按住鼠标左键滑动绘制通路刻印</span>
-          <span v-else>演练状态中：点击通行格或 WASD 八方向控制推进</span>
-        </div>
-      </div>
+    <!-- 工作台操作提示浮条 -->
+    <div class="canvas-hint">
+      💡 提示：按 [🖼️ 上传图片创建地图底层] | [🚪传送点 ➔ ➕新建传送点] 支持单图放多个传送点 | [Space/中键] 平移画布 | 右键 [传送点] “🔌 建立传送链接”
     </div>
+
+    <!-- 主 PixiJS 工作台 Viewport Container -->
+    <main ref="viewportContainer" class="viewport-canvas"></main>
+
+    <!-- 右键传送点上下文菜单 -->
+    <EditorContextMenu
+      :visible="contextMenuVisible"
+      :position="contextMenuPos"
+      :portal-name="contextMenuPortal?.name || ''"
+      @start-link="onStartLink"
+      @delete-portal="onDeletePortal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import {
-  Upload,
-  Download,
-  FolderOpen,
-  ArrowLeft,
-  Paintbrush,
-  Eraser,
-  RotateCcw,
-  FlaskConical,
-  MapPin,
-  Shield,
-  Sliders,
-  CheckCircle2
-} from 'lucide-vue-next';
-import { PixiGridEngine, type BrushMode } from '../engine/pixiGridEngine';
-import type { GridKey, MapGridConfig } from '../types/gridMap';
-import { exportZMapArchive, importZMapArchive } from '../engine/zmapArchive';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import type { WorldMapNode, WorldLink, WorldPortal } from '../types/worldMap';
+import { PixiWorldGraphEngine, type ToolMode } from '../engine/pixiWorldGraphEngine';
+import { exportZWorldArchive, importZWorldArchive } from '../engine/zworldArchive';
+import { importZMapArchive } from '../engine/zmapArchive';
+import EditorContextMenu from '../components/EditorContextMenu.vue';
 
-const pixiContainer = ref<HTMLElement | null>(null);
-const gridSize = ref(32);
-const brushMode = ref<BrushMode>('walkable');
-const isTestMode = ref(false);
-const walkableCount = ref(0);
-const hoverGrid = ref<GridKey | null>(null);
+const viewportContainer = ref<HTMLElement | null>(null);
+let engine: PixiWorldGraphEngine | null = null;
 
-let engine: PixiGridEngine | null = null;
+const currentTool = ref<ToolMode>('walkable');
+const activePortalId = ref<string | null>(null);
+
+// 预设传送点色号列表
+const PORTAL_COLORS = ['#38bdf8', '#c084fc', '#34d399', '#facc15', '#fb923c'];
+
+// 右键菜单状态
+const contextMenuVisible = ref(false);
+const contextMenuPos = ref({ x: 0, y: 0 });
+const contextMenuTarget = ref<{ mapId: string; portal: WorldPortal } | null>(null);
+const contextMenuPortal = ref<WorldPortal | null>(null);
+
+const mapNodes = ref<WorldMapNode[]>([]);
+const links = ref<WorldLink[]>([]);
+const activeMapId = ref<string | null>(null);
+
+const currentMapNode = computed(() => mapNodes.value.find((n) => n.id === activeMapId.value));
+const activePortal = computed(() => currentMapNode.value?.portals.find((p) => p.id === activePortalId.value));
 
 onMounted(async () => {
-  if (pixiContainer.value) {
-    engine = new PixiGridEngine();
-    await engine.init(pixiContainer.value, {
-      onWalkableCountChange: (count) => {
-        walkableCount.value = count;
+  if (viewportContainer.value) {
+    engine = new PixiWorldGraphEngine();
+    await engine.init(viewportContainer.value, {
+      onPortalContextMenu: (e, mapId, portal) => {
+        contextMenuPos.value = { x: e.clientX, y: e.clientY };
+        contextMenuTarget.value = { mapId, portal };
+        contextMenuPortal.value = portal;
+        contextMenuVisible.value = true;
       },
-      onHoverGrid: (grid) => {
-        hoverGrid.value = grid;
+      onSelectMapNode: (mapId) => {
+        activeMapId.value = mapId;
+        syncActivePortalForMapNode(mapId);
       }
     });
-    gridSize.value = engine.getGridSize();
+
+    if (engine && mapNodes.value.length > 0) {
+      engine.loadWorld(mapNodes.value, links.value);
+    }
   }
 });
-
-function updateGridSize() {
-  if (engine) {
-    engine.setGridSize(gridSize.value);
-  }
-}
-
-function setBrush(mode: BrushMode) {
-  if (isTestMode.value) {
-    isTestMode.value = false;
-    if (engine) engine.setTestMode(false);
-  }
-  brushMode.value = mode;
-  if (engine) {
-    engine.setBrushMode(mode);
-  }
-}
-
-function toggleTestMode() {
-  isTestMode.value = !isTestMode.value;
-  if (engine) {
-    engine.setTestMode(isTestMode.value);
-  }
-}
-
-function clearAll() {
-  if (engine) {
-    engine.clearGrid();
-  }
-}
-
-function handleImageUpload(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && engine) {
-    engine.clearGrid();
-    const blobUrl = URL.createObjectURL(file);
-    engine.loadBackgroundImage(blobUrl, file);
-  }
-}
-
-async function exportZMap() {
-  if (!engine) return;
-
-  try {
-    const manifest = engine.exportZMapManifest();
-    let imageBlob = await engine.getBackgroundImageBlob();
-
-    if (!imageBlob) {
-      // Create a small 1x1 transparent fallback PNG if no image loaded
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      imageBlob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
-    }
-
-    const zmapBlob = await exportZMapArchive(manifest, imageBlob);
-    const url = URL.createObjectURL(zmapBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `map_archive_${Date.now()}.zmap`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    alert('导出关卡包失败: ' + (err as Error).message);
-  }
-}
-
-async function handleArchiveImport(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file || !engine) return;
-
-  try {
-    if (file.name.endsWith('.zmap') || file.name.endsWith('.zip')) {
-      const { manifest, imageBlob } = await importZMapArchive(file);
-      await engine.importZMapConfig(manifest, imageBlob);
-      if (manifest.gridSize) gridSize.value = manifest.gridSize;
-    } else if (file.name.endsWith('.json')) {
-      const text = await file.text();
-      const config = JSON.parse(text) as MapGridConfig;
-      engine.importConfig(config);
-      if (config.gridSize) gridSize.value = config.gridSize;
-    }
-  } catch (err) {
-    alert('解析关卡包失败: ' + (err as Error).message);
-  }
-}
 
 onUnmounted(() => {
   if (engine) {
@@ -274,172 +183,400 @@ onUnmounted(() => {
     engine = null;
   }
 });
+
+function setTool(tool: ToolMode) {
+  currentTool.value = tool;
+  if (engine) {
+    engine.setToolMode(tool);
+  }
+  if (tool === 'portal' && currentMapNode.value) {
+    if (currentMapNode.value.portals.length === 0) {
+      addNewPortal();
+    } else if (!activePortalId.value) {
+      selectPortal(currentMapNode.value.portals[0]);
+    }
+  }
+}
+
+function syncActivePortalForMapNode(mapId: string) {
+  const node = mapNodes.value.find((n) => n.id === mapId);
+  if (!node) return;
+
+  // 检查当前选中的 activePortalId 是否已经属于该地图
+  const exists = node.portals.some((p) => p.id === activePortalId.value);
+  if (!exists) {
+    if (node.portals.length > 0) {
+      selectPortal(node.portals[0]);
+    } else {
+      activePortalId.value = null;
+    }
+  }
+}
+
+function addNewPortal() {
+  if (!currentMapNode.value) return;
+
+  const color = PORTAL_COLORS[currentMapNode.value.portals.length % PORTAL_COLORS.length];
+  const newPortal: WorldPortal = {
+    id: `portal_${Date.now()}`,
+    name: `传送点 #${currentMapNode.value.portals.length + 1}`,
+    color,
+    gridKeys: []
+  };
+
+  currentMapNode.value.portals.push(newPortal);
+  selectPortal(newPortal);
+}
+
+function selectPortal(portal: WorldPortal) {
+  activePortalId.value = portal.id;
+  if (engine) {
+    engine.setActivePortal(portal.id, portal.name, portal.color || '#38bdf8');
+  }
+}
+
+function onPortalNameChange() {
+  if (activePortal.value && engine) {
+    engine.setActivePortal(activePortal.value.id, activePortal.value.name, activePortal.value.color || '#38bdf8');
+  }
+}
+
+async function onAddMapImages(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const files = Array.from(input.files);
+
+  for (let index = 0; index < files.length; index++) {
+    const file = files[index];
+    const blobUrl = URL.createObjectURL(file);
+    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+    const mapId = `map_${Date.now()}_${index}`;
+
+    await new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const newNode: WorldMapNode = {
+          id: mapId,
+          name: fileNameWithoutExt || `地图底层 #${mapNodes.value.length + 1}`,
+          canvasPos: {
+            x: 80 + mapNodes.value.length * 550,
+            y: 80
+          },
+          gridType: 'square',
+          gridSize: 32,
+          imgWidth: img.width,
+          imgHeight: img.height,
+          bgFileName: `bg_${mapId}.png`,
+          walkableCells: [],
+          portals: [],
+          bgImageBlob: file,
+          bgImageUrl: blobUrl
+        };
+
+        mapNodes.value.push(newNode);
+        activeMapId.value = newNode.id;
+        resolve();
+      };
+      img.src = blobUrl;
+    });
+  }
+
+  if (engine) {
+    await engine.loadWorld(mapNodes.value, links.value);
+  }
+
+  input.value = '';
+}
+
+async function onReplaceBgImage(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (input.files && input.files[0] && activeMapId.value) {
+    const file = input.files[0];
+    const blobUrl = URL.createObjectURL(file);
+
+    const node = mapNodes.value.find((n) => n.id === activeMapId.value);
+    if (node) {
+      node.bgImageBlob = file;
+      node.bgImageUrl = blobUrl;
+
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          node.imgWidth = img.width;
+          node.imgHeight = img.height;
+          resolve();
+        };
+        img.src = blobUrl;
+      });
+
+      if (engine) {
+        await engine.loadWorld(mapNodes.value, links.value);
+      }
+    }
+  }
+}
+
+function onStartLink() {
+  if (contextMenuTarget.value && engine) {
+    engine.startLinking(contextMenuTarget.value.mapId, contextMenuTarget.value.portal.id);
+  }
+  closeContextMenu();
+}
+
+function onDeletePortal() {
+  if (contextMenuTarget.value && engine) {
+    engine.deletePortal(contextMenuTarget.value.mapId, contextMenuTarget.value.portal.id);
+  }
+  closeContextMenu();
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false;
+}
+
+async function exportZWorld() {
+  if (mapNodes.value.length === 0) {
+    alert('工作台为空，请先上传图片创建地图底层！');
+    return;
+  }
+  try {
+    const blob = await exportZWorldArchive('我的奇幻世界网', mapNodes.value, links.value);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fantasy_world_${Date.now()}.zworld`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('导出 .zworld 失败：' + (err as Error).message);
+  }
+}
+
+async function onImportFile(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    try {
+      if (file.name.endsWith('.zworld') || file.name.endsWith('.zip')) {
+        try {
+          const { manifest, mapBlobs } = await importZWorldArchive(file);
+          mapNodes.value = manifest.maps.map((m) => {
+            const blob = mapBlobs.get(m.id);
+            return {
+              ...m,
+              bgImageBlob: blob,
+              bgImageUrl: blob ? URL.createObjectURL(blob) : undefined
+            };
+          });
+          links.value = manifest.links || [];
+          if (mapNodes.value.length > 0) {
+            activeMapId.value = mapNodes.value[0].id;
+          }
+          if (engine) {
+            engine.loadWorld(mapNodes.value, links.value);
+          }
+          return;
+        } catch {
+          // 尝试以经典单图 .zmap 解析
+        }
+      }
+
+      // 单图兼容解析
+      const { manifest: zmap, imageBlob } = await importZMapArchive(file);
+      const singleNode: WorldMapNode = {
+        id: zmap.mapId || `map_${Date.now()}`,
+        name: zmap.mapName || '导入的单图关卡',
+        canvasPos: { x: 100, y: 100 },
+        gridType: 'square',
+        gridSize: zmap.gridSize || 32,
+        imgWidth: 1000,
+        imgHeight: 700,
+        bgFileName: zmap.bgImageFile || 'background.png',
+        walkableCells: zmap.walkableCells || [],
+        portals: [],
+        bgImageBlob: imageBlob,
+        bgImageUrl: URL.createObjectURL(imageBlob)
+      };
+
+      mapNodes.value = [singleNode];
+      links.value = [];
+      activeMapId.value = singleNode.id;
+      if (engine) {
+        engine.loadWorld(mapNodes.value, links.value);
+      }
+    } catch (err) {
+      alert('导入失败：' + (err as Error).message);
+    }
+  }
+}
 </script>
 
 <style scoped>
-.editor-page-container {
-  position: relative;
+.editor-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #08080c;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  background: #08080c;
-  color: #f3f4f6;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Outfit', sans-serif;
-  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Cinzel', sans-serif;
+  color: #fff;
 }
 
 .editor-header {
-  position: absolute;
-  top: 14px;
-  left: 20px;
-  right: 20px;
+  height: 56px;
+  background: rgba(18, 18, 25, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(197, 160, 89, 0.35);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  z-index: 100;
+  padding: 0 20px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.title-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.editor-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.98rem;
-  margin: 0;
-}
-
-.title-icon {
-  color: #c5a059;
-}
-
-.editor-subtitle {
-  font-size: 0.65rem;
-  color: #9ca3af;
-  font-family: 'Cinzel', serif;
-  letter-spacing: 0.1em;
-}
-
-.header-center {
+.left-group, .tools-group, .io-group {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.header-divider {
-  width: 1px;
-  height: 22px;
-  background: rgba(197, 160, 89, 0.25);
+.back-link {
+  color: #c5a059;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.85rem;
 }
 
-.tool-group {
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-family: 'Cinzel', serif;
+}
+
+.gold-text {
+  color: #fef08a;
+  text-shadow: 0 0 8px rgba(226, 194, 128, 0.3);
+}
+
+.divider {
+  color: rgba(197, 160, 89, 0.3);
+}
+
+.btn-tool, .btn-io, .btn-brush {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(197, 160, 89, 0.4);
+  transition: all 0.2s ease;
+}
+
+.dark-btn {
+  background: linear-gradient(180deg, #2a2a3a 0%, #161622 100%);
+  color: #fef08a;
+}
+
+.gold-btn {
+  background: linear-gradient(180deg, #c5a059 0%, #8c6827 100%);
+  color: #fff;
+  border-color: #e6c280;
+}
+
+.metal-btn {
+  background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+  color: #d1d5db;
+}
+
+.brush-selector {
+  display: flex;
+  gap: 4px;
+  background: rgba(8, 8, 12, 0.8);
+  padding: 3px;
+  border-radius: 4px;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+}
+
+.btn-brush {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+}
+
+.btn-brush.active {
+  background: rgba(197, 160, 89, 0.25);
+  color: #fef08a;
+  border: 1px solid #c5a059;
+}
+
+.portal-panel {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(8, 8, 12, 0.85);
-  padding: 5px 12px;
-  border-radius: 3px;
-  border: 1px solid rgba(197, 160, 89, 0.25);
+}
+
+.add-portal-btn {
+  padding: 4px 10px;
   font-size: 0.78rem;
-  color: #e6c280;
 }
 
-.slider-icon {
-  color: #c5a059;
-}
-
-.radius-slider {
-  width: 85px;
-}
-
-.btn-file {
-  position: relative;
-}
-
-.btn-test {
-  color: #a7f3d0;
-}
-
-.btn-test.active {
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 95, 70, 0.4) 100%);
-  border-color: #34d399;
-  color: #6ee7b7;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
-}
-
-.header-right {
+.portal-chips {
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.pixi-editor-viewport {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-/* Floating Korean Tactical Compass Status Bar */
-.status-capsule-wrapper {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  pointer-events: none;
-}
-
-.korean-compass-panel {
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 22px;
-  font-size: 0.78rem;
-  color: #e5e7eb;
-}
-
-.capsule-item {
-  display: flex;
-  align-items: center;
   gap: 6px;
 }
 
-.capsule-divider {
-  width: 1px;
-  height: 14px;
-  background: rgba(197, 160, 89, 0.3);
+.portal-chip {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: bold;
+  border: 1px solid #38bdf8;
+  border-radius: 12px;
+  background: rgba(8, 8, 12, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.icon-walkable {
-  color: #e6c280;
+.portal-chip.active {
+  background: rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 10px currentColor;
 }
 
-.icon-pin {
+.portal-name-input {
+  background: rgba(8, 8, 12, 0.9);
+  border: 1px solid #38bdf8;
   color: #38bdf8;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  outline: none;
+  width: 130px;
 }
 
-.hint-item {
-  color: #e6c280;
-  font-size: 0.75rem;
+.hidden-input {
+  display: none;
 }
 
-.test-mode-hint {
-  color: #34d399;
+.canvas-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  z-index: 5;
+  background: rgba(18, 18, 25, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: #d1d5db;
+}
+
+.viewport-canvas {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 56px);
 }
 </style>
