@@ -1,0 +1,11 @@
+{
+  "name": "z-ai-tavern",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "dev:web": "pnpm --filter z-ai-tavern-web run dev",
+    "dev:server": "pnpm --filter z-ai-tavern-server run start:dev"
+  }
+}

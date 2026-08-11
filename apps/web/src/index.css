@@ -1,0 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-dark: #08080c;
+  --bg-card: rgba(18, 18, 25, 0.88);
+  --bg-glass: rgba(22, 22, 32, 0.85);
+
+  --korean-gold: #c5a059;
+  --korean-gold-light: #fef08a;
+  --korean-gold-bright: #e6c280;
+  --korean-gold-dark: #8c6827;
+  --korean-gold-glow: rgba(226, 194, 128, 0.35);
+
+  --korean-rune-blue: #38bdf8;
+  --korean-rune-blue-glow: rgba(56, 189, 248, 0.4);
+  --korean-rune-red: #ef4444;
+
+  --border-metal: rgba(197, 160, 89, 0.32);
+  --border-metal-strong: rgba(230, 194, 128, 0.65);
+
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-gold: #e6c280;
+
+  --font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Outfit', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Outfit', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  user-select: none;
+  min-height: 100vh;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Korean Dark Fantasy Heavy Slab Panel */
+.korean-dark-slab {
+  position: relative;
+  background: linear-gradient(180deg, rgba(22, 22, 30, 0.92) 0%, rgba(12, 12, 17, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-metal);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 16px 40px rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+}
+
+/* Corner Ornaments for Metallic Panels */
+.corner-accent {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--korean-gold-bright);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.corner-tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.corner-tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.corner-bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.corner-br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* Korean Gold Foil Typography */
+.korean-gold-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #ffffff 0%, #fef08a 35%, #c5a059 70%, #8c6827 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+/* Korean Forged Metal Buttons */
+.korean-btn-metal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(35, 35, 48, 0.9) 0%, rgba(18, 18, 25, 0.9) 100%);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  color: #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 3px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.korean-btn-metal:hover {
+  background: linear-gradient(180deg, rgba(48, 48, 65, 0.95) 0%, rgba(26, 26, 36, 0.95) 100%);
+  border-color: var(--korean-gold-bright);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 14px var(--korean-gold-glow);
+}
+
+.korean-btn-metal:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.korean-btn-gold {
+  background: linear-gradient(180deg, #c5a059 0%, #9a7432 50%, #684a1a 100%);
+  border: 1px solid #fef08a;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.korean-btn-gold:hover {
+  background: linear-gradient(180deg, #e6c280 0%, #c5a059 50%, #8c6827 100%);
+  box-shadow: 0 0 20px var(--korean-gold-glow);
+}
+
+/* Korean Dark Etched Slot Segmented Control */
+.korean-segmented-slot {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(8, 8, 12, 0.9);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.korean-slot-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9ca3af;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.korean-slot-item:hover {
+  color: #e5e7eb;
+}
+
+.korean-slot-item.active {
+  background: linear-gradient(180deg, rgba(42, 42, 58, 0.95) 0%, rgba(20, 20, 28, 0.95) 100%);
+  border-color: var(--korean-gold);
+  color: #fef08a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 10px rgba(197, 160, 89, 0.3);
+}
+
+/* Korean Custom Slider */
+input[type="range"].korean-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  background: rgba(10, 10, 15, 0.9);
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"].korean-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fef08a 0%, #c5a059 100%);
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 8px var(--korean-gold-glow), 0 2px 4px rgba(0, 0, 0, 0.8);
+  transition: transform 0.15s ease;
+}
+
+input[type="range"].korean-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 14, 0.9);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(197, 160, 89, 0.4);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--korean-gold-bright);
+}
+
+
